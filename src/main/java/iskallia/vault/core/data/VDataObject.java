@@ -78,15 +78,38 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 	}
 
 	@Override
-	public D write(BitBuffer buffer) {
+	public D write(BitBuffer buffer, SyncContext context) {
+		VVersion version = context.getVersion();
+		VKeyRegistry registry = context.getRegistry();
+
+		buffer.writeIntSegmented(this.values.size(), 4);
+
+		this.values.forEach((key, entry) -> {
+			if(!entry.handler.canSync(context)) return;
+			buffer.writeIntBounded(registry.getIndex(key, version), 0, registry.getSize(version) - 1);
+			key.get(version).writeValue(buffer, context, entry.value); //TODO: serialize handler
+		});
+
 		return (D)this;
 	}
 
 	@Override
-	public D read(BitBuffer buffer) {
+	public D read(BitBuffer buffer, SyncContext context) {
+		VVersion version = context.getVersion();
+		VKeyRegistry registry = context.getRegistry();
+
+		this.values.clear();
+		int size = buffer.readIntSegmented(4);
+
+		for(int i = 0; i < size; i++) {
+			VKey<?> key = registry.getKey(buffer.readIntBounded(0, registry.getSize(version) - 1), version);
+			Object value = key.get(version).readValue(buffer, context);
+			Entry entry = new Entry(value, null); //TODO: serialize handler
+			this.values.put((VKey<Object>)key, entry);
+		}
+
 		return (D)this;
 	}
-
 
 	@Override
 	public boolean isDirty(SyncContext context) {
@@ -125,7 +148,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 			if(!entry.handler.canSync(context)) continue;
 			packet.writeBoolean(true);
 			packet.writeIntBounded(registry.getIndex(updatedKey, version), 0, registry.getSize(version) - 1);
-			updatedKey.get(version).writeValue(packet, entry.value);
+			updatedKey.get(version).writeValue(packet, context, entry.value);
 		}
 
 		packet.writeBoolean(false);
@@ -135,7 +158,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 			if(!entry.handler.canSync(context)) continue;
 			packet.writeBoolean(true);
 			packet.writeIntBounded(registry.getIndex(createdKey, version), 0, registry.getSize(version) - 1);
-			createdKey.get(version).writeValue(packet, entry.value);
+			createdKey.get(version).writeValue(packet, context, entry.value); //TODO: serialize handler
 		}
 
 		packet.writeBoolean(false);
@@ -153,13 +176,13 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 
 		while(packet.readBoolean()) {
 			VKey<?> key = registry.getKey(packet.readIntBounded(0, registry.getSize(version) - 1), version);
-			this.values.get(key).value = key.get(context.getVersion()).readValue(packet);
+			this.values.get(key).value = key.get(context.getVersion()).readValue(packet, context);
 		}
 
 		while(packet.readBoolean()) {
 			VKey<?> key = registry.getKey(packet.readIntBounded(0, registry.getSize(version) - 1), version);
-			VDataObject.Entry entry = new VDataObject.Entry(key.get(version).readValue(packet), null);
-			this.values.put((VKey<Object>)key, entry);
+			VDataObject.Entry entry = new VDataObject.Entry(key.get(version).readValue(packet, context), null);
+			this.values.put((VKey<Object>)key, entry); //TODO: serialize handler
 		}
 	}
 
@@ -177,7 +200,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 
 			if(!entry.handler.canSync(context)) continue;
 
-			if(entry.value instanceof IVCompound<?>) {
+			if(entry.value instanceof IVCompound<?> && !this.createdKeys.contains(key)) {
 				IVCompound<?> compound = (IVCompound<?>)entry.value;
 
 				if(compound.isDirty(context)) {

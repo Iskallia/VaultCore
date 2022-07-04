@@ -1,5 +1,6 @@
 package iskallia.vault.core.data.type;
 
+import iskallia.vault.core.data.sync.context.SyncContext;
 import iskallia.vault.core.net.BitBuffer;
 
 public class VBoundedInt extends VType<Integer> {
@@ -31,12 +32,12 @@ public class VBoundedInt extends VType<Integer> {
     }
 
     @Override
-    public void writeValue(BitBuffer buffer, Integer value) {
+    public void writeValue(BitBuffer buffer, SyncContext context, Integer value) {
         buffer.writeBits(this.clamp(value) - this.min, this.bits);
     }
 
     @Override
-    public Integer readValue(BitBuffer buffer) {
+    public Integer readValue(BitBuffer buffer, SyncContext context) {
         return this.min + (int)buffer.readBits(this.bits);
     }
 

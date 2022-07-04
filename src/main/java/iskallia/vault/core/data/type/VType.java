@@ -1,5 +1,6 @@
 package iskallia.vault.core.data.type;
 
+import iskallia.vault.core.data.sync.context.SyncContext;
 import iskallia.vault.core.net.BitBuffer;
 import iskallia.vault.core.net.IBitSerializable;
 
@@ -8,9 +9,9 @@ import java.util.function.Supplier;
 
 public abstract class VType<T> {
 
-	public abstract void writeValue(BitBuffer buffer, T value);
+	public abstract void writeValue(BitBuffer buffer, SyncContext context, T value);
 
-	public abstract T readValue(BitBuffer buffer);
+	public abstract T readValue(BitBuffer buffer, SyncContext context);
 
 	//========================================================================================//
 

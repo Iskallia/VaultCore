@@ -131,12 +131,25 @@ public class VDataList<D extends VDataList<D, E>, E> extends AbstractList<E> imp
 	}
 
 	@Override
-	public D write(BitBuffer buffer) {
+	public D write(BitBuffer buffer, SyncContext context) {
+		buffer.writeIntSegmented(this.values.size(), 4);
+
+		for(E value : this.values) {
+			this.type.writeValue(buffer, context, value);
+		}
+
 		return (D)this;
 	}
 
 	@Override
-	public D read(BitBuffer buffer) {
+	public D read(BitBuffer buffer, SyncContext context) {
+		int size = buffer.readIntSegmented(4);
+		this.values.clear();
+
+		for(int i = 0; i < size; i++) {
+			this.add(this.type.readValue(buffer, context));
+		}
+
 		return (D)this;
 	}
 
@@ -175,7 +188,7 @@ public class VDataList<D extends VDataList<D, E>, E> extends AbstractList<E> imp
 			}
 
 			if(action.type == ActionType.APPEND || action.type == ActionType.ADD) {
-				this.type.writeValue(packet, (E)action.value);
+				this.type.writeValue(packet, context, (E)action.value);
 			}
 		}
 	}
@@ -198,7 +211,7 @@ public class VDataList<D extends VDataList<D, E>, E> extends AbstractList<E> imp
 			}
 
 			if(action.type == ActionType.APPEND || action.type == ActionType.ADD) {
-				action.value = this.type.readValue(packet);
+				action.value = this.type.readValue(packet, context);
 			}
 
 			action.apply(this);
