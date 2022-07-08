@@ -6,6 +6,11 @@ import iskallia.vault.core.net.BitBuffer;
 public class VVoid extends VType<Void> {
 
 	@Override
+	public Void validate(Void value) {
+		return value;
+	}
+
+	@Override
 	public void writeValue(BitBuffer buffer, SyncContext context, Void value) {
 
 	}

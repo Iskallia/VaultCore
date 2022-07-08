@@ -6,7 +6,8 @@ import iskallia.vault.core.data.type.VType;
 
 import java.util.UUID;
 
-import static iskallia.vault.core.VVersion.*;
+import static iskallia.vault.core.VVersion.newerOrEqualTo;
+import static iskallia.vault.core.VVersion.v1_0;
 
 public class Header extends VDataObject<Header> {
 	public static final VKey<Integer> VERSION = VKey.create("version", Integer.class)

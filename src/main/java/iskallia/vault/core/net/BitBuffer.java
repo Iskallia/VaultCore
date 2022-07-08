@@ -285,19 +285,6 @@ public class BitBuffer {
 		return value;
 	}
 
-	public BitBuffer writeLong(long value) {
-		this.writer.accept((int)(this.wBuffer | value << this.wPosition));
-		this.writer.accept((int)(value >>> 8 - this.wPosition));
-		this.writer.accept((int)(value >>> 8 - this.wPosition + 8));
-		this.writer.accept((int)(value >>> 8 - this.wPosition + 16));
-		this.writer.accept((int)(value >>> 8 - this.wPosition + 24));
-		this.writer.accept((int)(value >>> 8 - this.wPosition + 32));
-		this.writer.accept((int)(value >>> 8 - this.wPosition + 40));
-		this.writer.accept((int)(value >>> 8 - this.wPosition + 48));
-		this.wBuffer = (int)(value >>> 56 >>> 8 - this.wPosition);
-		return this;
-	}
-
 	public long readLongBounded(long min, long max) {
 		return this.readBits(64 - Long.numberOfLeadingZeros(max - min)) + min;
 	}
@@ -316,6 +303,19 @@ public class BitBuffer {
 
 			value |= bits << shift;
 		}
+	}
+
+	public BitBuffer writeLong(long value) {
+		this.writer.accept((int)(this.wBuffer | value << this.wPosition));
+		this.writer.accept((int)(value >>> 8 - this.wPosition));
+		this.writer.accept((int)(value >>> 8 - this.wPosition + 8));
+		this.writer.accept((int)(value >>> 8 - this.wPosition + 16));
+		this.writer.accept((int)(value >>> 8 - this.wPosition + 24));
+		this.writer.accept((int)(value >>> 8 - this.wPosition + 32));
+		this.writer.accept((int)(value >>> 8 - this.wPosition + 40));
+		this.writer.accept((int)(value >>> 8 - this.wPosition + 48));
+		this.wBuffer = (int)(value >>> 56 >>> 8 - this.wPosition);
+		return this;
 	}
 
 	public BitBuffer writeLongBounded(long value, long min, long max) {

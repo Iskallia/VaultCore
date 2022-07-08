@@ -22,6 +22,16 @@ public class VKey<T> {
 		return new Builder<>(id);
 	}
 
+	public T validate(VVersion version, T value) {
+		for(Entry<T> entry : this.entries) {
+			if(entry.predicate.test(version)) {
+				return entry.type.validate(value);
+			}
+		}
+
+		return null;
+	}
+
 	public VType<T> get(VVersion version) {
 		for(Entry<T> entry : this.entries) {
 			if(entry.predicate.test(version)) {

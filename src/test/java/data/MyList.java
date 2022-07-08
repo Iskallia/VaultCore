@@ -9,7 +9,7 @@ import java.util.List;
 public class MyList extends VDataList<MyList, Integer> {
 
 	public MyList(VType<Integer> type, List<Integer> delegate) {
-		super(type, delegate);
+		super(delegate, type);
 	}
 
 	public MyList() {

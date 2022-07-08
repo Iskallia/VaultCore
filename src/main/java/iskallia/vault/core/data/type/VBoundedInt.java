@@ -27,13 +27,18 @@ public class VBoundedInt extends VType<Integer> {
         return this.bits;
     }
 
-    public int clamp(int value) {
-        return value < this.min ? this.min : Math.min(value, this.max);
+    @Override
+    public Integer validate(Integer value) {
+        if(value < this.min || value > this.max) {
+            throw new UnsupportedOperationException(String.format("Value %d is not between %d and %d", value, this.min, this.max));
+        }
+
+        return value;
     }
 
     @Override
     public void writeValue(BitBuffer buffer, SyncContext context, Integer value) {
-        buffer.writeBits(this.clamp(value) - this.min, this.bits);
+        buffer.writeBits(value - this.min, this.bits);
     }
 
     @Override

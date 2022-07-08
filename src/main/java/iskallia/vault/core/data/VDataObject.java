@@ -12,10 +12,11 @@ import java.util.*;
 
 public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 
-	protected Map<VKey<Object>, Entry> values = new IdentityHashMap<>();
-	protected Set<VKey<Object>> createdKeys = new HashSet<>();
-	protected Set<VKey<Object>> updatedKeys = new HashSet<>();
-	protected Set<VKey<Object>> removedKeys = new HashSet<>();
+	private final Map<VKey<Object>, Entry> values = new IdentityHashMap<>();
+
+	private final Set<VKey<Object>> createdKeys = new HashSet<>();
+	private final Set<VKey<Object>> updatedKeys = new HashSet<>();
+	private final Set<VKey<Object>> removedKeys = new HashSet<>();
 
 	public VDataObject() {
 
@@ -87,7 +88,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 		this.values.forEach((key, entry) -> {
 			if(!entry.handler.canSync(context)) return;
 			buffer.writeIntBounded(registry.getIndex(key, version), 0, registry.getSize(version) - 1);
-			key.get(version).writeValue(buffer, context, entry.value); //TODO: serialize handler
+			key.get(version).writeValue(buffer, context, key.validate(version, entry.value)); //TODO: serialize handler
 		});
 
 		return (D)this;
@@ -113,21 +114,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 
 	@Override
 	public boolean isDirty(SyncContext context) {
-		if(!this.createdKeys.isEmpty() || !this.updatedKeys.isEmpty() || !this.removedKeys.isEmpty()) {
-			return true;
-		}
-
-		for(Entry entry : this.values.values()) {
-			if(!entry.handler.canSync(context)) continue;
-
-			if(entry.value instanceof VDataObject) {
-				if(((VDataObject<?>)entry.value).isDirty(context)) {
-					return true;
-				}
-			}
-		}
-
-		return false;
+		return !this.createdKeys.isEmpty() || !this.updatedKeys.isEmpty() || !this.removedKeys.isEmpty();
 	}
 
 	@Override
@@ -148,7 +135,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 			if(!entry.handler.canSync(context)) continue;
 			packet.writeBoolean(true);
 			packet.writeIntBounded(registry.getIndex(updatedKey, version), 0, registry.getSize(version) - 1);
-			updatedKey.get(version).writeValue(packet, context, entry.value);
+			updatedKey.get(version).writeValue(packet, context, updatedKey.validate(version, entry.value));
 		}
 
 		packet.writeBoolean(false);
@@ -158,7 +145,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 			if(!entry.handler.canSync(context)) continue;
 			packet.writeBoolean(true);
 			packet.writeIntBounded(registry.getIndex(createdKey, version), 0, registry.getSize(version) - 1);
-			createdKey.get(version).writeValue(packet, context, entry.value); //TODO: serialize handler
+			createdKey.get(version).writeValue(packet, context, createdKey.validate(version, entry.value)); //TODO: serialize handler
 		}
 
 		packet.writeBoolean(false);
@@ -187,12 +174,37 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 	}
 
 	@Override
-	public boolean collectSyncTree(BitPacket packet, SyncContext context) {
+	public void resetSync() {
+		this.createdKeys.clear();
+		this.updatedKeys.clear();
+		this.removedKeys.clear();
+	}
+
+	@Override
+	public boolean isDirtyTree(SyncContext context) {
+		if(this.isDirty(context)) {
+			return true;
+		}
+
+		for(Entry entry : this.values.values()) {
+			if(!entry.handler.canSync(context)) continue;
+
+			if(entry.value instanceof VDataObject) {
+				if(((VDataObject<?>)entry.value).isDirty(context)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	@Override
+	public void collectSyncTree(BitPacket packet, SyncContext context) {
 		VVersion version = context.getVersion();
 		VKeyRegistry registry = context.getRegistry();
 
 		this.collectSync(packet, context);
-		boolean modified = !this.createdKeys.isEmpty() || !this.updatedKeys.isEmpty() || !this.removedKeys.isEmpty();
 
 		for(Map.Entry<VKey<Object>, Entry> e : this.values.entrySet()) {
 			VKey<Object> key = e.getKey();
@@ -203,7 +215,7 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 			if(entry.value instanceof IVCompound<?> && !this.createdKeys.contains(key)) {
 				IVCompound<?> compound = (IVCompound<?>)entry.value;
 
-				if(compound.isDirty(context)) {
+				if(compound.isDirtyTree(context)) {
 					packet.writeBoolean(true);
 					packet.writeIntBounded(registry.getIndex(key, version), 0, registry.getSize(version) - 1);
 					compound.collectSyncTree(packet, context);
@@ -212,7 +224,6 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 		}
 
 		packet.writeBoolean(false);
-		return modified;
 	}
 
 	@Override
@@ -229,10 +240,14 @@ public class VDataObject<D extends VDataObject<D>> implements IVCompound<D> {
 	}
 
 	@Override
-	public void resetSync() {
-		this.createdKeys.clear();
-		this.updatedKeys.clear();
-		this.removedKeys.clear();
+	public void resetSyncTree() {
+		this.resetSync();
+
+		for(Entry entry : this.values.values()) {
+			if(entry.value instanceof IVCompound<?>) {
+				((IVCompound<?>)entry.value).resetSyncTree();
+			}
+		}
 	}
 
 	@Override

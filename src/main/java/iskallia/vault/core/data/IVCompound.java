@@ -12,10 +12,14 @@ public interface IVCompound<D> extends IBitSerializable<D> {
 
 	void applySync(BitPacket packet, SyncContext context);
 
-	boolean collectSyncTree(BitPacket packet, SyncContext context);
+	void resetSync();
+
+	boolean isDirtyTree(SyncContext context);
+
+	void collectSyncTree(BitPacket packet, SyncContext context);
 
 	void applySyncTree(BitPacket packet, SyncContext context);
 
-	void resetSync();
+	void resetSyncTree();
 
 }

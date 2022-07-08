@@ -12,6 +12,10 @@ public class Vault extends VDataObject<Vault> {
 
 	public static VKeyRegistry REGISTRY = new VKeyRegistry();
 
+	public Vault() {
+
+	}
+
 	public static final VKey<Header> HEADER = VKey.create("header", Header.class)
 		.with(newerOrEqualTo(v1_0), VType.ofCompound(Header::new))
 		.build(REGISTRY);
@@ -23,6 +27,9 @@ public class Vault extends VDataObject<Vault> {
 		.build(Vault.REGISTRY);
 	public static final VKey<MyList> LIST = VKey.create("list", MyList.class)
 		.with(newerOrEqualTo(v1_0), VType.ofCompound(MyList::new))
+		.build(Vault.REGISTRY);
+	public static final VKey<MyMap> MAP = VKey.create("map", MyMap.class)
+		.with(newerOrEqualTo(v1_0), VType.ofCompound(MyMap::new))
 		.build(Vault.REGISTRY);
 
 }

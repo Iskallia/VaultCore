@@ -9,6 +9,8 @@ import java.util.function.Supplier;
 
 public abstract class VType<T> {
 
+	public abstract T validate(T value);
+
 	public abstract void writeValue(BitBuffer buffer, SyncContext context, T value);
 
 	public abstract T readValue(BitBuffer buffer, SyncContext context);
@@ -20,7 +22,7 @@ public abstract class VType<T> {
 	}
 
 	public static <T extends IBitSerializable<?>> VCompound<T> ofCompound(Supplier<T> supplier) {
-		return new VCompound<>(supplier);
+		return new VCompound<>(supplier, false);
 	}
 
 	public static VInt ofInt() {
@@ -32,7 +34,7 @@ public abstract class VType<T> {
 	}
 
 	public static VType<UUID> ofUUID() {
-		return new VUUID();
+		return new VUUID(false);
 	}
 
 }

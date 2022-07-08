@@ -1,7 +1,5 @@
 package iskallia.vault.core.net;
 
-import iskallia.vault.core.net.BitBuffer;
-
 public class BitPacket extends BitBuffer {
 
 	protected int[] packet = new int[8];
